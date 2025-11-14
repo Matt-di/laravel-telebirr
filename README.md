@@ -31,7 +31,7 @@ Telebirr payment gateway integration for Laravel applications with support for s
 ### Basic Setup (Single Merchant)
 
 ```bash
-composer require Matt-di/laravel-telebirr
+composer require matt-di/laravel-telebirr
 php artisan telebirr:install
 ```
 
