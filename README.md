@@ -14,7 +14,7 @@ Telebirr payment gateway integration for Laravel applications with support for s
 - ⚡ **High Performance** - Token caching, queue-based processing, retry logic
 - 🛠 **Developer Friendly** - Artisan commands, comprehensive logging, extensive configuration
 - 🔧 **Highly Configurable** - Extensive customization options for any use case
-- 📱 **Mobile Ready** - Raw request generation for Telebirr mobile SDK
+- 📱 **Mobile SDK Ready** - Raw request generation for Telebirr mobile applications
 - 🎯 **Event Driven** - Laravel events for payment lifecycle hooks
 
 ## Installation
@@ -49,7 +49,7 @@ TELEBIRR_APP_SECRET=your_app_secret
 TELEBIRR_RSA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 ```
 
-### 2. Create Payment Order
+### 2. Create Payment Request
 
 ```php
 use Telebirr\LaravelTelebirr\Facades\Telebirr;
@@ -59,6 +59,8 @@ $rawRequest = Telebirr::initiatePayment([
     'amount' => 150.00,
     'subject' => 'Order Payment'
 ]);
+
+// Returns: "appid=MERCHANT123&merch_code=MC456&nonce_str=abc...&prepay_id=PRE123...&timestamp=202512021200&sign_type=SHA256WithRSA&sign=signed_data..."
 ```
 
 ### 3. Handle Webhook (Automatically Done)
@@ -281,10 +283,10 @@ class PaymentController extends Controller
                 'timeout_express' => '30m',
             ]);
 
-            // 3. Update order with payment details
+            // 3. Update order with payment request details
             $order->update([
-                'payment_ref' => $paymentRequest['payment_id'] ?? null,
-                'payment_url' => $paymentRequest['payment_url'] ?? $paymentRequest,
+                'payment_raw_request' => $paymentRequest,
+                'raw_request_parsed' => $this->parseRawRequest($paymentRequest),
             ]);
 
             Log::info('Telebirr payment initiated', [
@@ -295,7 +297,7 @@ class PaymentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'payment_url' => $paymentRequest,
+                'payment_raw_request' => $paymentRequest,
                 'order_id' => $order->id,
                 'reference' => $order->reference
             ]);
