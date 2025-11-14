@@ -114,6 +114,27 @@ if ($result && $result['order_status'] === 'PAY_SUCCESS') {
 $userInfo = Telebirr::getAuthToken($accessToken);
 ```
 
+### Error Handling
+
+```php
+try {
+    $paymentRequest = Telebirr::initiatePayment([
+        'txn_ref' => 'TXN_' . time(),
+        'amount' => 150.00,
+        'subject' => 'Order Payment',
+    ]);
+
+    // Process successful payment initiation
+
+} catch (\Telebirr\LaravelTelebirr\Exceptions\TelebirrException $e) {
+    // Handle payment initiation errors
+    Log::error('Telebirr payment failed: ' . $e->getMessage());
+
+    // Show user-friendly error message
+    return back()->withErrors(['payment' => 'Payment initiation failed. Please try again.']);
+}
+```
+
 ## Event Listeners
 
 Listen to payment lifecycle events:
@@ -210,6 +231,245 @@ php artisan vendor:publish --tag=telebirr-config
 2. Run: `php artisan telebirr:install --mode=multi --run-migrations`
 3. Add merchant records to `telebirr_merchants` table
 4. Update code to pass merchant context where needed
+
+## Complete Integration Example
+
+Here's a complete real-world integration example:
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Telebirr\LaravelTelebirr\Facades\Telebirr;
+use Telebirr\LaravelTelebirr\Exceptions\TelebirrException;
+
+class PaymentController extends Controller
+{
+    /**
+     * Create payment order and initiate Telebirr payment
+     */
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1|max:10000',
+            'description' => 'required|string|max:255',
+        ]);
+
+        // 1. Create order in your system first
+        $order = Order::create([
+            'user_id' => auth()->id(),
+            'amount' => $request->amount,
+            'currency' => 'ETB',
+            'description' => $request->description,
+            'status' => 'pending',
+            'reference' => 'ORD_' . time() . '_' . auth()->id(),
+        ]);
+
+        try {
+            // 2. Initiate Telebirr payment
+            $paymentRequest = Telebirr::initiatePayment([
+                'txn_ref' => $order->reference,
+                'amount' => $order->amount,
+                'subject' => 'Order #' . $order->id,
+                'description' => $order->description,
+                'notify_url' => route('webhook.telebirr'),
+                'return_url' => route('payment.success', $order->id),
+                'timeout_express' => '30m',
+            ]);
+
+            // 3. Update order with payment details
+            $order->update([
+                'payment_ref' => $paymentRequest['payment_id'] ?? null,
+                'payment_url' => $paymentRequest['payment_url'] ?? $paymentRequest,
+            ]);
+
+            Log::info('Telebirr payment initiated', [
+                'order_id' => $order->id,
+                'amount' => $order->amount,
+                'payment_ref' => $order->reference
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'payment_url' => $paymentRequest,
+                'order_id' => $order->id,
+                'reference' => $order->reference
+            ]);
+
+        } catch (TelebirrException $e) {
+            // 4. Handle payment initiation failure
+            $order->update(['status' => 'failed']);
+
+            Log::error('Telebirr payment initiation failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment initiation failed. Please try again.',
+                'error' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Handle Telebirr webhooks
+     */
+    public function webhook(Request $request)
+    {
+        try {
+            $payload = $request->all();
+
+            // Verify webhook and process payment
+            $result = Telebirr::handleWebhook($request);
+
+            if ($result && isset($payload['merch_order_id'])) {
+                // Update order status based on payment result
+                $order = Order::where('reference', $payload['merch_order_id'])->first();
+
+                if ($order) {
+                    if ($payload['trade_status'] === 'Completed') {
+                        $order->update([
+                            'status' => 'paid',
+                            'paid_at' => now(),
+                            'payment_details' => $payload
+                        ]);
+
+                        Log::info('Order marked as paid', [
+                            'order_id' => $order->id,
+                            'payment_ref' => $payload['merch_order_id']
+                        ]);
+
+                    } elseif ($payload['trade_status'] === 'Failed') {
+                        $order->update([
+                            'status' => 'failed',
+                            'payment_details' => $payload
+                        ]);
+
+                        Log::warning('Payment failed', [
+                            'order_id' => $order->id,
+                            'payment_ref' => $payload['merch_order_id']
+                        ]);
+                    }
+                }
+            }
+
+            return response()->json(['code' => 0, 'message' => 'Success']);
+
+        } catch (\Exception $e) {
+            Log::error('Webhook processing failed', [
+                'error' => $e->getMessage(),
+                'payload' => $request->all()
+            ]);
+
+            return response()->json(['code' => 1, 'message' => 'Processing failed'], 500);
+        }
+    }
+
+    /**
+     * Payment success page
+     */
+    public function success(Order $order)
+    {
+        // Verify final payment status
+        try {
+            $result = Telebirr::verifyPayment($order->reference);
+
+            if ($result && $result['order_status'] === 'PAY_SUCCESS') {
+                $order->update([
+                    'status' => 'paid',
+                    'verified_at' => now()
+                ]);
+
+                return view('payment.success', compact('order'));
+            } else {
+                return view('payment.pending', compact('order'));
+            }
+
+        } catch (TelebirrException $e) {
+            Log::error('Payment verification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return view('payment.error', [
+                'order' => $order,
+                'error' => 'Unable to verify payment status'
+            ]);
+        }
+    }
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### RSA Key Format Error
+```bash
+# Ensure your private key includes proper PEM headers
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7VITN...
+-----END PRIVATE KEY-----
+```
+
+#### Network Timeouts
+```env
+# Increase timeout in config or .env
+TELEBIRR_API_TIMEOUT=30
+```
+
+#### Webhook Signature Verification Failures
+```bash
+# Test webhook locally first
+php artisan telebirr:setup-webhook --url=https://your-domain.com/api/telebirr/webhook --test
+
+# Check your public/private key pair
+php artisan telebirr:test-connection
+```
+
+#### Multi-Merchant Configuration Issues
+```bash
+# Ensure merchant records exist
+php artisan tinker
+>>> App\Models\TelebirrMerchant::count()
+>>> App\Models\TelebirrMerchant::first()
+
+# Test with merchant context
+Telebirr::initiatePayment($data, ['store_id' => 1])
+```
+
+#### Database Connection Issues
+```bash
+# Run migrations for multi-merchant mode
+php artisan migrate
+php artisan telebirr:install --run-migrations
+```
+
+#### Queue Configuration for Background Processing
+```env
+# Ensure queue is configured for payment verification
+QUEUE_CONNECTION=database
+TELEBIRR_QUEUE_VERIFY_PAYMENT_ENABLED=true
+```
+
+### Debug Mode
+Enable detailed logging for troubleshooting:
+```env
+LOG_LEVEL=debug
+TELEBIRR_LOGGING_ENABLED=true
+```
+
+### Getting Help
+- Check logs: `storage/logs/laravel.log`
+- Review network requests in browser dev tools
+- Test API credentials manually with Postman
+- Verify webhook endpoint is publicly accessible
 
 ## Security
 
