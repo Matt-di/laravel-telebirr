@@ -1,5 +1,5 @@
 {
-    "name": "your-vendor/laravel-telebirr",
+    "name": "matirezzo/laravel-telebirr",
     "description": "Telebirr payment gateway integration for Laravel applications",
     "type": "library",
     "license": "MIT",

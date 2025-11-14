@@ -248,8 +248,8 @@ class InstallCommand extends Command
         $this->bullet('Setup webhook: php artisan telebirr:setup-webhook');
 
         $this->newLine();
-        $this->info('📚 Documentation: https://github.com/your-vendor/laravel-telebirr');
-        $this->info('🆘 Support: https://github.com/your-vendor/laravel-telebirr/issues');
+        $this->info('📚 Documentation: https://github.com/matirezzo/laravel-telebirr');
+        $this->info('🆘 Support: https://github.com/matirezzo/laravel-telebirr/issues');
     }
 
     /**
