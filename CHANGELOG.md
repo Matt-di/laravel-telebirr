@@ -73,4 +73,4 @@ This package was developed to solve common Telebirr integration pain points in L
 - **Performance Optimized**: Background processing and caching
 - **Developer Friendly**: Comprehensive documentation and testing
 
-For questions or issues, please visit the [GitHub repository](https://github.com/matirezzo/laravel-telebirr).
+For questions or issues, please visit the [GitHub repository](https://github.com/Matt-di/laravel-telebirr).

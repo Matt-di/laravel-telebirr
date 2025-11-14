@@ -1,8 +1,8 @@
 # Laravel Telebirr Payment Gateway
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/matirezzo/laravel-telebirr.svg?style=flat-square)](https://packagist.org/packages/matirezzo/laravel-telebirr)
-[![Total Downloads](https://img.shields.io/packagist/dt/matirezzo/laravel-telebirr.svg?style=flat-square)](https://packagist.org/packages/matirezzo/laravel-telebirr)
-[![License](https://img.shields.io/packagist/l/matirezzo/laravel-telebirr.svg?style=flat-square)](https://packagist.org/packages/matirezzo/laravel-telebirr)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/Matt-di/laravel-telebirr.svg?style=flat-square)](https://packagist.org/packages/Matt-di/laravel-telebirr)
+[![Total Downloads](https://img.shields.io/packagist/dt/Matt-di/laravel-telebirr.svg?style=flat-square)](https://packagist.org/packages/Matt-di/laravel-telebirr)
+[![License](https://img.shields.io/packagist/l/Matt-di/laravel-telebirr.svg?style=flat-square)](https://packagist.org/packages/Matt-di/laravel-telebirr)
 
 Telebirr payment gateway integration for Laravel applications with support for single and multi-merchant setups.
 
@@ -22,14 +22,14 @@ Telebirr payment gateway integration for Laravel applications with support for s
 ### Basic Setup (Single Merchant)
 
 ```bash
-composer require matirezzo/laravel-telebirr
+composer require Matt-di/laravel-telebirr
 php artisan telebirr:install
 ```
 
 ### Multi-Merchant Setup
 
 ```bash
-composer require matirezzo/laravel-telebirr
+composer require Matt-di/laravel-telebirr
 php artisan telebirr:install --mode=multi --run-migrations
 ```
 
@@ -244,5 +244,5 @@ This package is open-sourced software licensed under the [MIT license](LICENSE).
 ## Support
 
 - 📖 Documentation: https://laravel-telebirr.com
-- 🐛 Issues: [GitHub Issues](https://github.com/matirezzo/laravel-telebirr/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/matirezzo/laravel-telebirr/discussions)
+- 🐛 Issues: [GitHub Issues](https://github.com/Matt-di/laravel-telebirr/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/Matt-di/laravel-telebirr/discussions)
