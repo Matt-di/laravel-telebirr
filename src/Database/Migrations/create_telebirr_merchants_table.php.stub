@@ -1,0 +1,47 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up(): void
+    {
+        Schema::create('telebirr_merchants', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->nullable();
+            $table->string('merchant_app_id');
+            $table->string('merchant_code');
+            $table->text('rsa_private_key');
+            $table->text('rsa_public_key')->nullable();
+            // Generic foreign key for custom relationships (configurable)
+            $table->unsignedBigInteger('owner_id')->nullable();
+            $table->string('owner_type')->nullable(); // 'branch', 'store', 'organization', etc.
+            $table->boolean('is_active')->default(true);
+            $table->json('settings')->nullable();
+            $table->timestamps();
+
+            // Indexes for performance
+            $table->index(['owner_type', 'owner_id']);
+            $table->index(['is_active']);
+            $table->index('merchant_code');
+            $table->unique(['merchant_app_id', 'merchant_code']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('telebirr_merchants');
+    }
+};
