@@ -6,6 +6,15 @@
 
 Telebirr payment gateway integration for Laravel applications with support for single and multi-merchant setups.
 
+## 🎯 Integration Type
+
+**This package is designed for Telebirr Super App integration** where the frontend handles payment requests through the Telebirr mobile application. 
+
+- **Backend Role:** Generates signed payment requests and handles webhooks
+- **Frontend Role:** Uses Telebirr mobile SDK to process payments
+- **📖 Frontend Integration:** Refer to [Telebirr Developer Documentation](https://developer.telebirr.et/) for mobile app integration details
+- **🔗 Official Resources:** Check Telebirr's official documentation for SDK implementation and best practices
+
 ## Features
 
 - 🚀 **Simple Setup** - Get started in minutes with zero configuration
